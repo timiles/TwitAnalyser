@@ -32,6 +32,15 @@ namespace TwitAnalyser
                         }
                         break;
                     }
+                case "gettweets":
+                    {
+                        var tweets = await client.GetUserTimeline(arg);
+                        foreach (var tweet in tweets)
+                        {
+                            Console.WriteLine(tweet);
+                        }
+                        break;
+                    }
                 default:
                     {
                         throw new ArgumentOutOfRangeException(mode);

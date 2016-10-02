@@ -44,7 +44,7 @@ namespace TwitAnalyser
                 var responseContent = reader.ReadToEnd();
                 var authenticateResponse = JsonConvert.DeserializeObject<AuthenticateResponse>(responseContent);
 
-                this.apiAuthorizationHeader = $"{authenticateResponse.token_type} {authenticateResponse.access_token}";            
+                this.apiAuthorizationHeader = $"{authenticateResponse.token_type} {authenticateResponse.access_token}";
             }
         }
 
@@ -63,6 +63,23 @@ namespace TwitAnalyser
                 var responseContent = reader.ReadToEnd();
                 var searchResponse = JsonConvert.DeserializeObject<SearchResponse>(responseContent);
                 return searchResponse.statuses.Select(x => x.user.screen_name).Distinct();
+            }
+        }
+
+        public async Task<IEnumerable<string>> GetUserTimeline(string screenName)
+        {
+            // max count = 200, ref: https://dev.twitter.com/rest/reference/get/statuses/user_timeline
+            var timelineUrl = $"https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={screenName}&include_rts=1&exclude_replies=0&trim_user=1&count=200";
+            var request = (HttpWebRequest)WebRequest.Create(timelineUrl);
+            request.Headers["Authorization"] = this.apiAuthorizationHeader;
+            request.Method = "GET";
+
+            using (var response = await request.GetResponseAsync())
+            using (var reader = new StreamReader(response.GetResponseStream()))
+            {
+                var responseContent = reader.ReadToEnd();
+                var userTimelineResponse = JsonConvert.DeserializeObject<UserTimelineReponse>(responseContent);
+                return userTimelineResponse.Select(x => x.text);
             }
         }
     }
