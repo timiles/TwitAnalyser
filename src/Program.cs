@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace TwitAnalyser
 {
@@ -11,14 +12,20 @@ namespace TwitAnalyser
 
             var mode = args[2];
 
+            var task = RunAsync(oAuthConsumerKey, oAuthConsumerSecret, mode, args[3]);
+            Task.WaitAll(task);
+        }
+
+        private static async Task RunAsync(string oAuthConsumerKey, string oAuthConsumerSecret, string mode, string arg)
+        {
             var client = new TwitterClient();
-            client.Authenticate(oAuthConsumerKey, oAuthConsumerSecret);
+            await client.Authenticate(oAuthConsumerKey, oAuthConsumerSecret);
 
             switch (mode)
             {
                 case "findusers":
                     {
-                        var users = client.FindUsersAsync(args[3]).Result;
+                        var users = await client.FindUsers(arg);
                         foreach (var user in users)
                         {
                             Console.WriteLine(user);

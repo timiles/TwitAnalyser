@@ -14,14 +14,7 @@ namespace TwitAnalyser
     {
         private string apiAuthorizationHeader;
 
-        public void Authenticate(string oAuthConsumerKey, string oAuthConsumerSecret)
-        {
-            var auth = AuthenticateAsync(oAuthConsumerKey, oAuthConsumerSecret).Result;
-            this.apiAuthorizationHeader = $"{auth.token_type} {auth.access_token}";
-            Console.WriteLine(this.apiAuthorizationHeader);
-        }
-
-        private static async Task<AuthenticateResponse> AuthenticateAsync(string oAuthConsumerKey, string oAuthConsumerSecret)
+        public async Task Authenticate(string oAuthConsumerKey, string oAuthConsumerSecret)
         {
             var oAuthUrl = "https://api.twitter.com/oauth2/token";
             var postBody = "grant_type=client_credentials";
@@ -49,11 +42,13 @@ namespace TwitAnalyser
             using (var reader = new StreamReader(response.GetResponseStream()))
             {
                 var responseContent = reader.ReadToEnd();
-                return JsonConvert.DeserializeObject<AuthenticateResponse>(responseContent);
+                var authenticateResponse = JsonConvert.DeserializeObject<AuthenticateResponse>(responseContent);
+
+                this.apiAuthorizationHeader = $"{authenticateResponse.token_type} {authenticateResponse.access_token}";            
             }
         }
 
-        public async Task<IEnumerable<string>> FindUsersAsync(string searchTerm)
+        public async Task<IEnumerable<string>> FindUsers(string searchTerm)
         {
             var q = Uri.EscapeDataString(searchTerm);
             // max count = 100, ref: https://dev.twitter.com/rest/reference/get/search/tweets
