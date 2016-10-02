@@ -102,11 +102,19 @@ namespace TwitAnalyser
                     return userTimelineResponse;
                 }
             }
+            catch (WebException ex) when (((HttpWebResponse)ex.Response).StatusCode == (HttpStatusCode)429)
+            {
+                throw new RateLimitExceededException();
+            }
             catch (Exception ex)
             {
                 Console.WriteLine("Error: " + screenName + ", " + ex.ToString());
                 return null;
             }
+        }
+
+        public class RateLimitExceededException : Exception
+        {
         }
     }
 }
