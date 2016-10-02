@@ -37,7 +37,7 @@ namespace TwitAnalyser
 
     public class User
     {
-        public int id { get; set; }
+        public long id { get; set; }
         public string id_str { get; set; }
     }
 }
