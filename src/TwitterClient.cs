@@ -48,22 +48,40 @@ namespace TwitAnalyser
             }
         }
 
-        public async Task<IEnumerable<string>> FindUsers(string searchTerm)
+        public async Task<IEnumerable<string>> FindUsers(string searchTerm, int? numberOfUsersToGet = null)
         {
+            Func<string, Task<SearchResponse>> getSearchResponse = async (url) =>
+            {
+                var request = (HttpWebRequest)WebRequest.Create(url);
+                request.Headers["Authorization"] = this.apiAuthorizationHeader;
+                request.Method = "GET";
+
+                using (var response = await request.GetResponseAsync())
+                using (var reader = new StreamReader(response.GetResponseStream()))
+                {
+                    var responseContent = reader.ReadToEnd();
+                    var searchResponse = JsonConvert.DeserializeObject<SearchResponse>(responseContent);
+                    return searchResponse;
+                }
+            };
+
             var q = Uri.EscapeDataString(searchTerm);
             // max count = 100, ref: https://dev.twitter.com/rest/reference/get/search/tweets
             var searchUrl = $"https://api.twitter.com/1.1/search/tweets.json?q={q}&count=100";
-            var request = (HttpWebRequest)WebRequest.Create(searchUrl);
-            request.Headers["Authorization"] = this.apiAuthorizationHeader;
-            request.Method = "GET";
+            var nextSearchUrl = searchUrl;
 
-            using (var response = await request.GetResponseAsync())
-            using (var reader = new StreamReader(response.GetResponseStream()))
+            var users = new List<string>();
+            do
             {
-                var responseContent = reader.ReadToEnd();
-                var searchResponse = JsonConvert.DeserializeObject<SearchResponse>(responseContent);
-                return searchResponse.statuses.Select(x => x.user.screen_name).Distinct();
+                var searchResponse = await getSearchResponse(nextSearchUrl);
+                users.AddRange(searchResponse.statuses.Select(x => x.user.screen_name.ToLower()).Distinct());
+                // don't use searchResponse.search_metadata.next_results, often returns null :(
+                var minId = searchResponse.statuses.Select(x => x.id).Min();
+                nextSearchUrl = searchUrl + $"&max_id={(minId - 1)}";
             }
+            while (users.Count() < numberOfUsersToGet);
+
+            return users;
         }
 
         public async Task<IEnumerable<string>> GetUserTimeline(string screenName)

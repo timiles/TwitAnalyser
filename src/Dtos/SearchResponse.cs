@@ -10,6 +10,7 @@ namespace TwitAnalyser.Dtos
         public class Status
         {
             public string created_at { get; set; }
+            public long id { get; set; }
             public string text { get; set; }
             public bool truncated { get; set; }
             public User user { get; set; }
@@ -19,7 +20,7 @@ namespace TwitAnalyser.Dtos
 
         public class User
         {
-            public object id { get; set; }
+            public long id { get; set; }
             public string id_str { get; set; }
             public string name { get; set; }
             public string screen_name { get; set; }

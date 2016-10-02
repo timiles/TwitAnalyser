@@ -1,50 +1,42 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace TwitAnalyser
 {
     public class Program
     {
+        const int UsersPerSearchTerm = 1000;
+
         public static void Main(string[] args)
         {
             var oAuthConsumerKey = args[0];
             var oAuthConsumerSecret = args[1];
 
-            var mode = args[2];
+            var searchTerm = args[2];
 
-            var task = RunAsync(oAuthConsumerKey, oAuthConsumerSecret, mode, args[3]);
+            var task = RunAsync(oAuthConsumerKey, oAuthConsumerSecret, searchTerm);
             Task.WaitAll(task);
         }
 
-        private static async Task RunAsync(string oAuthConsumerKey, string oAuthConsumerSecret, string mode, string arg)
+        private static async Task RunAsync(string oAuthConsumerKey, string oAuthConsumerSecret, string searchTerm)
         {
-            var client = new TwitterClient();
-            await client.Authenticate(oAuthConsumerKey, oAuthConsumerSecret);
-
-            switch (mode)
+            if (!Directory.Exists(searchTerm))
             {
-                case "findusers":
-                    {
-                        var users = await client.FindUsers(arg);
-                        foreach (var user in users)
-                        {
-                            Console.WriteLine(user);
-                        }
-                        break;
-                    }
-                case "gettweets":
-                    {
-                        var tweets = await client.GetUserTimeline(arg);
-                        foreach (var tweet in tweets)
-                        {
-                            Console.WriteLine(tweet);
-                        }
-                        break;
-                    }
-                default:
-                    {
-                        throw new ArgumentOutOfRangeException(mode);
-                    }
+                Directory.CreateDirectory(searchTerm);
+            }
+
+            var knownUsersCount = Directory.GetDirectories(searchTerm).Length;
+            if (knownUsersCount < UsersPerSearchTerm)
+            {
+                var client = new TwitterClient();
+                await client.Authenticate(oAuthConsumerKey, oAuthConsumerSecret);
+
+                var users = await client.FindUsers(searchTerm, UsersPerSearchTerm - knownUsersCount);
+                foreach (var user in users)
+                {
+                    Directory.CreateDirectory(Path.Combine(searchTerm, user));
+                }
             }
         }
     }
