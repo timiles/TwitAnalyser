@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace TwitAnalyser
@@ -43,9 +45,11 @@ namespace TwitAnalyser
                 knownUserDirsForSearchTerm = Directory.GetDirectories(searchTermDirPath);
             }
 
+            var allStatuses = new List<string>();
             foreach (var userDir in knownUserDirsForSearchTerm)
             {
-                if (Directory.GetFiles(userDir).Length == 0)
+                var files = Directory.GetFiles(userDir);
+                if (files.Length == 0)
                 {
                     var screenName = Path.GetFileName(userDir);
                     var statuses = await client.GetUserTimeline(screenName);
@@ -54,7 +58,20 @@ namespace TwitAnalyser
                     {
                         File.WriteAllText(Path.Combine(userDir, status.id + ".txt"), status.text);
                     }
+                    files = Directory.GetFiles(userDir);
                 }
+                foreach (var file in files)
+                {
+                    allStatuses.Add(File.ReadAllText(file));
+                }
+            }
+
+            var statusAnalyser = new StatusAnalyser(allStatuses);
+            statusAnalyser.RemoveContaining(searchTerm);
+            var frequentWords = statusAnalyser.GetWordFrequencies();
+            foreach (var word in frequentWords.OrderByDescending(x => x.Value))
+            {
+                Console.WriteLine($"{word.Key} ({word.Value})");
             }
         }
     }
