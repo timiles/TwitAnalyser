@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -48,6 +50,24 @@ namespace TwitAnalyser
             {
                 var responseContent = reader.ReadToEnd();
                 return JsonConvert.DeserializeObject<AuthenticateResponse>(responseContent);
+            }
+        }
+
+        public async Task<IEnumerable<string>> FindUsersAsync(string searchTerm)
+        {
+            var q = Uri.EscapeDataString(searchTerm);
+            // max count = 100, ref: https://dev.twitter.com/rest/reference/get/search/tweets
+            var searchUrl = $"https://api.twitter.com/1.1/search/tweets.json?q={q}&count=100";
+            var request = (HttpWebRequest)WebRequest.Create(searchUrl);
+            request.Headers["Authorization"] = this.apiAuthorizationHeader;
+            request.Method = "GET";
+
+            using (var response = await request.GetResponseAsync())
+            using (var reader = new StreamReader(response.GetResponseStream()))
+            {
+                var responseContent = reader.ReadToEnd();
+                var searchResponse = JsonConvert.DeserializeObject<SearchResponse>(responseContent);
+                return searchResponse.statuses.Select(x => x.user.screen_name).Distinct();
             }
         }
     }
